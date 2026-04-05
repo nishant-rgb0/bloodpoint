@@ -25,3 +25,17 @@ donors, requesters, and hospitals across Delhi NCR.
 ## Setup
 npm install
 node index.js
+
+## How to Run Locally
+
+1. Clone the repo
+   git clone https://github.com/nishant-rgb0/bloodpoint.git
+
+2. Install dependencies
+   npm install
+
+3. Start the server
+   node server.js
+
+4. Open in browser
+   http://localhost:3000
