@@ -32,6 +32,7 @@ with a custom database engine and JWT authentication.
 ---
 
 ## 📁 Project Structure
+
 bloodpoint/
 ├── server.js          # Entry point
 ├── routes/            # All API route handlers
@@ -111,7 +112,8 @@ http://localhost:3000
 
 **Nishant Singh**
 B.Tech Computer Science — J.S.S. Academy of Technical Education, Noida
-[LinkedIn](www.linkedin.com/in/nishantsingh092) 
+[LinkedIn]( www.linkedin.com/in/
+nishantsingh092 ) 
 
 
 4. Open in browser
