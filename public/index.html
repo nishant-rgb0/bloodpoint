@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BloodPoint — AI Blood Donor Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --red:#E8192C;--red2:#FF4444;--dark:#09090E;--dark2:#111118;--dark3:#18181F;
+  --card:#13131A;--card2:#1C1C26;--border:#252530;--text:#E2E2EE;--muted:#5A5A78;
+  --white:#F8F8FF;--gold:#F5A623;--green:#00CC73;--blue:#4A90E2;--purple:#9B59B6;
+}
+html{scroll-behavior:smooth;font-size:14px}
+body{background:var(--dark);color:var(--text);font-family:'Manrope',sans-serif;min-height:100vh;overflow-x:hidden}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--dark)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+/* LAYOUT */
+.app-shell{display:flex;height:100vh;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:240px;min-width:240px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto;transition:width .3s}
+.sidebar.collapsed{width:68px;min-width:68px}
+.sidebar-logo{padding:20px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+.logo-icon{width:32px;height:32px;background:var(--red);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.logo-text{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--white);white-space:nowrap;overflow:hidden}
+.logo-text span{color:var(--red)}
+.sidebar-nav{flex:1;padding:16px 10px;display:flex;flex-direction:column;gap:2px}
+.nav-item{display:flex;align-items:center;gap:12px;padding:11px 10px;border-radius:10px;cursor:pointer;transition:all .2s;color:var(--muted);font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;border:1px solid transparent;text-decoration:none}
+.nav-item:hover{background:var(--dark3);color:var(--text)}
+.nav-item.active{background:rgba(232,25,44,.12);color:var(--red);border-color:rgba(232,25,44,.2)}
+.nav-icon{font-size:18px;flex-shrink:0;width:24px;text-align:center}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;font-family:'Space Mono',monospace}
+.sidebar-footer{padding:14px 12px;border-top:1px solid var(--border)}
+.user-card{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;cursor:pointer;transition:background .2s}
+.user-card:hover{background:var(--dark3)}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--red),#8B0000);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:#fff;flex-shrink:0}
+.user-info{overflow:hidden}
+.user-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-role{font-size:11px;color:var(--muted)}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* TOPBAR */
+.topbar{height:58px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;flex-shrink:0}
+.topbar-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--white);flex:1}
+.topbar-search{flex:1;max-width:320px;position:relative}
+.topbar-search input{width:100%;background:var(--dark3);border:1px solid var(--border);border-radius:8px;padding:8px 14px 8px 36px;color:var(--text);font-size:13px;font-family:'Manrope',sans-serif;outline:none;transition:border-color .2s}
+.topbar-search input:focus{border-color:var(--red)}
+.topbar-search .si{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:15px}
+.topbar-actions{display:flex;align-items:center;gap:10px}
+.icon-btn{width:36px;height:36px;background:var(--dark3);border:1px solid var(--border);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .2s;position:relative}
+.icon-btn:hover{border-color:var(--red);background:rgba(232,25,44,.08)}
+.notif-badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:9px;font-weight:700;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;display:none}
+.notif-badge.show{display:flex}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:24px}
+
+/* PAGE */
+.page{display:none}
+.page.active{display:block}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px}
+.card-sm{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px}
+.card-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--white);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+
+/* GRID */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+
+/* STAT CARDS */
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:.06}
+.stat-card.red::before{background:var(--red)}
+.stat-card.green::before{background:var(--green)}
+.stat-card.gold::before{background:var(--gold)}
+.stat-card.blue::before{background:var(--blue)}
+.stat-icon{font-size:24px;margin-bottom:12px}
+.stat-num{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;color:var(--white);line-height:1}
+.stat-label{font-size:12px;color:var(--muted);margin-top:4px}
+.stat-change{font-size:12px;margin-top:8px;display:flex;align-items:center;gap:4px}
+.stat-change.up{color:var(--green)}
+.stat-change.down{color:var(--red)}
+
+/* FORM */
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:11.5px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px}
+.form-control{width:100%;background:var(--dark3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13.5px;font-family:'Manrope',sans-serif;outline:none;transition:border-color .2s}
+.form-control:focus{border-color:var(--red)}
+.form-control::placeholder{color:var(--muted)}
+select.form-control option{background:var(--dark)}
+textarea.form-control{resize:vertical;min-height:80px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 20px;border-radius:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;border:none;transition:all .2s;white-space:nowrap}
+.btn-primary{background:var(--red);color:#fff}
+.btn-primary:hover{background:var(--red2);transform:translateY(-1px);box-shadow:0 6px 20px rgba(232,25,44,.3)}
+.btn-outline{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn-outline:hover{border-color:var(--red);color:var(--red)}
+.btn-ghost{background:transparent;color:var(--muted);border:none}
+.btn-ghost:hover{color:var(--text)}
+.btn-sm{padding:7px 14px;font-size:12px}
+.btn-success{background:var(--green);color:#000}
+.btn-gold{background:var(--gold);color:#000}
+.btn-full{width:100%}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+
+/* BLOOD TYPE BADGES */
+.bt-badge{display:inline-block;padding:3px 10px;border-radius:6px;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;background:rgba(232,25,44,.12);color:var(--red);border:1px solid rgba(232,25,44,.25)}
+
+/* URGENCY */
+.urgency-critical{color:#ff3b3b;font-weight:700}
+.urgency-urgent{color:var(--gold);font-weight:600}
+.urgency-normal{color:var(--muted)}
+.urgency-badge-critical{background:rgba(255,59,59,.15);color:#ff3b3b;border:1px solid rgba(255,59,59,.3);padding:2px 10px;border-radius:6px;font-size:11px;font-weight:700;font-family:'Space Mono',monospace}
+.urgency-badge-urgent{background:rgba(245,166,35,.12);color:var(--gold);border:1px solid rgba(245,166,35,.3);padding:2px 10px;border-radius:6px;font-size:11px;font-weight:600;font-family:'Space Mono',monospace}
+.urgency-badge-normal{background:rgba(90,90,120,.15);color:var(--muted);border:1px solid var(--border);padding:2px 10px;border-radius:6px;font-size:11px;font-family:'Space Mono',monospace}
+
+/* STATUS */
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.status-dot.green{background:var(--green)}
+.status-dot.red{background:var(--red)}
+.status-dot.gold{background:var(--gold)}
+.status-dot.muted{background:var(--muted)}
+
+/* TABLE */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+td{padding:12px 14px;font-size:13.5px;border-bottom:1px solid rgba(37,37,48,.7)}
+tr:hover td{background:rgba(255,255,255,.02)}
+tr:last-child td{border-bottom:none}
+
+/* REQUEST CARD */
+.req-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;transition:all .2s;position:relative}
+.req-card:hover{border-color:rgba(232,25,44,.3);transform:translateY(-2px)}
+.req-card.critical-card{border-color:rgba(255,59,59,.3)}
+.req-card.critical-card::before{content:'🚨 CRITICAL';position:absolute;top:12px;right:12px;background:#ff3b3b;color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:5px;font-family:'Space Mono',monospace;letter-spacing:.5px}
+.req-blood-big{font-family:'Syne',sans-serif;font-size:42px;font-weight:800;color:var(--red);line-height:1;margin:8px 0}
+.req-meta{font-size:12px;color:var(--muted);line-height:2}
+
+/* DONOR CARD */
+.donor-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;align-items:flex-start;gap:14px;transition:all .2s}
+.donor-card:hover{border-color:rgba(232,25,44,.25);transform:translateY(-1px)}
+.donor-av{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--red),#8B0000);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:#fff;flex-shrink:0}
+.donor-bt{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--red);margin-bottom:2px}
+.donor-nm{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px}
+.donor-info-sm{font-size:12px;color:var(--muted)}
+.available-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:5px}
+
+/* LEADERBOARD */
+.lb-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.lb-row:last-child{border-bottom:none}
+.lb-rank{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:var(--muted);width:24px;text-align:center}
+.lb-rank.gold{color:var(--gold)}
+.lb-rank.silver{color:#C0C0C0}
+.lb-rank.bronze{color:#CD7F32}
+.lb-av{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--red),#6B0011);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:#fff;flex-shrink:0}
+.lb-name{flex:1;font-weight:600;font-size:13.5px}
+.lb-meta{font-size:11px;color:var(--muted);margin-top:1px}
+.lb-count{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--red)}
+
+/* BANK CARD */
+.bank-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.bank-name{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:var(--white);margin-bottom:4px}
+.bank-addr{font-size:12px;color:var(--muted);margin-bottom:14px}
+.inventory-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.inv-cell{background:var(--dark3);border-radius:6px;padding:6px;text-align:center}
+.inv-type{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted)}
+.inv-units{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--text)}
+.inv-units.low{color:var(--red)}
+.inv-units.ok{color:var(--green)}
+
+/* NOTIFICATION */
+.notif-item{padding:14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s}
+.notif-item:hover{background:var(--dark3)}
+.notif-item.unread{background:rgba(232,25,44,.04)}
+.notif-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+.notif-msg{font-size:12px;color:var(--muted);line-height:1.6}
+.notif-time{font-size:11px;color:var(--muted);margin-top:4px;font-family:'Space Mono',monospace}
+
+/* PROFILE */
+.profile-header{background:linear-gradient(135deg,rgba(232,25,44,.1),rgba(139,0,17,.05));border:1px solid rgba(232,25,44,.15);border-radius:16px;padding:28px;margin-bottom:20px;display:flex;align-items:center;gap:20px}
+.profile-big-av{width:72px;height:72px;border-radius:16px;background:linear-gradient(135deg,var(--red),#8B0000);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:#fff;flex-shrink:0}
+.profile-name{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--white)}
+.profile-sub{font-size:13px;color:var(--muted);margin-top:4px}
+.profile-tags{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.tag{padding:3px 12px;border-radius:20px;font-size:11.5px;font-weight:600}
+.tag-red{background:rgba(232,25,44,.12);color:var(--red);border:1px solid rgba(232,25,44,.2)}
+.tag-green{background:rgba(0,204,115,.1);color:var(--green);border:1px solid rgba(0,204,115,.2)}
+.tag-gold{background:rgba(245,166,35,.1);color:var(--gold);border:1px solid rgba(245,166,35,.2)}
+.tag-blue{background:rgba(74,144,226,.1);color:var(--blue);border:1px solid rgba(74,144,226,.2)}
+
+/* BLOOD TYPE SELECTOR */
+.bt-selector{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
+.bt-opt{background:var(--dark3);border:1px solid var(--border);border-radius:8px;padding:9px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--muted);cursor:pointer;transition:all .2s;text-align:center}
+.bt-opt:hover{border-color:rgba(232,25,44,.4);color:var(--text)}
+.bt-opt.selected{background:rgba(232,25,44,.15);border-color:var(--red);color:var(--red)}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:1000;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:520px;width:90%;max-height:90vh;overflow-y:auto}
+.modal-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--white);margin-bottom:6px}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:22px}
+.modal-close{float:right;cursor:pointer;color:var(--muted);font-size:20px;line-height:1;background:none;border:none;color:var(--muted)}
+.modal-close:hover{color:var(--text)}
+
+/* TOAST */
+.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px 18px;max-width:320px;font-size:13.5px;transform:translateX(110%);transition:transform .3s;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.toast.show{transform:translateX(0)}
+.toast.success{border-color:var(--green)}
+.toast.error{border-color:var(--red)}
+.toast.warning{border-color:var(--gold)}
+.toast-title{font-weight:700;margin-bottom:3px;font-family:'Syne',sans-serif;font-size:14px}
+.toast.success .toast-title{color:var(--green)}
+.toast.error .toast-title{color:var(--red)}
+.toast.warning .toast-title{color:var(--gold)}
+
+/* LANDING */
+.landing{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:60px 20px;position:relative;overflow:hidden}
+.landing::before{content:'';position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(232,25,44,.08) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+.land-tag{font-family:'Space Mono',monospace;font-size:11px;color:var(--red);letter-spacing:3px;margin-bottom:20px}
+.land-h1{font-family:'Syne',sans-serif;font-size:clamp(44px,7vw,88px);font-weight:800;line-height:.95;color:var(--white);margin-bottom:24px}
+.land-h1 em{color:var(--red);font-style:normal}
+.land-p{max-width:500px;color:var(--muted);font-size:16px;line-height:1.7;margin:0 auto 36px}
+.land-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.land-stats{display:flex;gap:50px;margin-top:60px;flex-wrap:wrap;justify-content:center}
+.land-stat-num{font-family:'Syne',sans-serif;font-size:34px;font-weight:800;color:var(--white)}
+.land-stat-lbl{font-size:12px;color:var(--muted);letter-spacing:1px;margin-top:2px}
+
+/* AUTH FORMS */
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.auth-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:36px;width:100%;max-width:440px}
+.auth-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--white);margin-bottom:6px}
+.auth-sub{font-size:13px;color:var(--muted);margin-bottom:28px}
+.auth-switch{text-align:center;margin-top:20px;font-size:13px;color:var(--muted)}
+.auth-switch a{color:var(--red);cursor:pointer;font-weight:600}
+
+/* TABS */
+.tabs{display:flex;gap:2px;background:var(--dark3);border-radius:10px;padding:3px;margin-bottom:20px}
+.tab{flex:1;padding:8px;text-align:center;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);transition:all .2s}
+.tab.active{background:var(--card);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+
+/* COMPATIBILITY TABLE */
+.compat-table{font-size:11px;font-family:'Space Mono',monospace}
+.compat-table th,.compat-table td{padding:5px 8px;text-align:center}
+.compat-yes{color:var(--green);font-weight:700}
+.compat-no{color:var(--border)}
+
+/* PROGRESS */
+.progress-bar{height:6px;background:var(--dark3);border-radius:3px;overflow:hidden;margin-top:6px}
+.progress-fill{height:100%;border-radius:3px;background:var(--red);transition:width 1s ease}
+.progress-fill.green{background:var(--green)}
+.progress-fill.gold{background:var(--gold)}
+
+/* CHART CARD */
+.chart-wrap{position:relative;width:100%}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-icon{font-size:40px;margin-bottom:12px;opacity:.5}
+
+/* LOADING SPINNER */
+.spinner{width:20px;height:20px;border:2px solid rgba(232,25,44,.3);border-top-color:var(--red);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* CANVAS BG */
+#particles-canvas{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.4}
+
+@media(max-width:900px){
+  .sidebar{width:68px;min-width:68px}
+  .logo-text,.nav-item span:not(.nav-icon){display:none}
+  .nav-badge{display:none}
+  .grid-4{grid-template-columns:1fr 1fr}
+  .grid-3{grid-template-columns:1fr}
+  .form-row,.form-row-3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<canvas id="particles-canvas"></canvas>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<!-- ROOT -->
+<div id="root"></div>
+
+<script>
+// ===== STATE =====
+let state = {
+  user: null, donor: null, page: 'landing',
+  requests: [], donors: [], banks: [], notifications: [],
+  stats: {}, selectedBT: '', notifCount: 0
+};
+
+// ===== API =====
+const api = {
+  async call(method, url, body) {
+    try {
+      const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: body ? JSON.stringify(body) : undefined });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Request failed');
+      return d;
+    } catch (e) { throw e; }
+  },
+  get: (url) => api.call('GET', url),
+  post: (url, b) => api.call('POST', url, b),
+  put: (url, b) => api.call('PUT', url, b),
+  patch: (url, b) => api.call('PATCH', url, b),
+};
+
+// ===== TOAST =====
+function toast(title, msg, type = 'success') {
+  const w = document.getElementById('toastWrap');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<div class="toast-title">${title}</div><div>${msg || ''}</div>`;
+  w.appendChild(t);
+  requestAnimationFrame(() => { requestAnimationFrame(() => t.classList.add('show')); });
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3500);
+}
+
+// ===== MODAL =====
+function openModal(html) {
+  document.getElementById('modal-content').innerHTML = html;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+document.getElementById('modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
+
+// ===== ROUTER =====
+function navigate(page) {
+  state.page = page;
+  render();
+  document.querySelector('.content')?.scrollTo(0, 0);
+  // Update sidebar
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === page));
+}
+
+// ===== PARTICLES =====
+(function () {
+  const cv = document.getElementById('particles-canvas'), ctx = cv.getContext('2d');
+  function resize() { cv.width = innerWidth; cv.height = innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+  const pts = Array.from({ length: 60 }, () => ({ x: Math.random() * cv.width, y: Math.random() * cv.height, vx: (Math.random() - .5) * .25, vy: (Math.random() - .5) * .25, r: Math.random() * 1.5 + .3 }));
+  function draw() {
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    pts.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = cv.width; if (p.x > cv.width) p.x = 0;
+      if (p.y < 0) p.y = cv.height; if (p.y > cv.height) p.y = 0;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(232,25,44,.25)'; ctx.fill();
+    });
+    for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
+      const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y, d = Math.hypot(dx, dy);
+      if (d < 100) { ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y); ctx.strokeStyle = `rgba(232,25,44,${.05 * (1 - d / 100)})`; ctx.lineWidth = .5; ctx.stroke(); }
+    }
+    requestAnimationFrame(draw);
+  } draw();
+})();
+
+// ===== RENDER =====
+function render() {
+  const root = document.getElementById('root');
+  if (!state.user) {
+    root.innerHTML = renderPublic();
+    bindPublic();
+    return;
+  }
+  root.innerHTML = renderApp();
+  bindApp();
+  renderPage();
+}
+
+// ===== PUBLIC (Landing + Auth) =====
+function renderPublic() {
+  if (state.page === 'login') return renderLogin();
+  if (state.page === 'register') return renderRegister();
+  return renderLanding();
+}
+
+function renderLanding() {
+  return `
+  <div class="landing">
+    <div class="land-tag">// AI-POWERED BLOOD MANAGEMENT PLATFORM</div>
+    <h1 class="land-h1">Give Blood.<br><em>Save Lives.</em><br>Be A Hero.</h1>
+    <p class="land-p">BloodPoint connects blood donors with patients in need, powered by machine learning to match the right donor, at the right time, every time.</p>
+    <div class="land-btns">
+      <button class="btn btn-primary" style="padding:14px 32px;font-size:15px" onclick="state.page='register';render()">🩸 Register as Donor</button>
+      <button class="btn btn-outline" style="padding:14px 32px;font-size:15px" onclick="state.page='login';render()">Sign In</button>
+    </div>
+    <div class="land-stats">
+      <div><div class="land-stat-num">12,400+</div><div class="land-stat-lbl">DONORS REGISTERED</div></div>
+      <div><div class="land-stat-num">47</div><div class="land-stat-lbl">BLOOD BANKS</div></div>
+      <div><div class="land-stat-num">94%</div><div class="land-stat-lbl">MATCH ACCURACY</div></div>
+      <div><div class="land-stat-num">3</div><div class="land-stat-lbl">LIVES SAVED DAILY</div></div>
+    </div>
+  </div>`;
+}
+
+function renderLogin() {
+  return `
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div style="font-size:30px;margin-bottom:12px">🩸</div>
+      <div class="auth-title">Welcome Back</div>
+      <div class="auth-sub">Sign in to your BloodPoint account</div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="li-email" type="email" placeholder="you@email.com" value="demo@bloodpoint.in"></div>
+      <div class="form-group"><label class="form-label">Password</label><input class="form-control" id="li-pass" type="password" placeholder="••••••••" value="demo123"></div>
+      <button class="btn btn-primary btn-full" style="padding:12px;font-size:14px;margin-top:4px" onclick="doLogin()">Sign In →</button>
+      <p style="font-size:12px;color:var(--muted);margin-top:12px;text-align:center">Demo: demo@bloodpoint.in / demo123</p>
+      <div class="auth-switch">Don't have an account? <a onclick="state.page='register';render()">Register</a></div>
+      <div class="auth-switch" style="margin-top:8px"><a onclick="state.page='landing';render()">← Back</a></div>
+    </div>
+  </div>`;
+}
+
+function renderRegister() {
+  const bts = ['O+','O-','A+','A-','B+','B-','AB+','AB-'];
+  return `
+  <div class="auth-wrap" style="padding:30px 20px">
+    <div class="auth-card" style="max-width:560px">
+      <div style="font-size:28px;margin-bottom:12px">🩸</div>
+      <div class="auth-title">Join BloodPoint</div>
+      <div class="auth-sub">Register as a blood donor and save lives</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">First Name</label><input class="form-control" id="rg-fname" placeholder="Aisha"></div>
+        <div class="form-group"><label class="form-label">Last Name</label><input class="form-control" id="rg-lname" placeholder="Rahman"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="rg-email" type="email" placeholder="you@email.com"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Phone</label><input class="form-control" id="rg-phone" placeholder="+91 98765 43210"></div>
+        <div class="form-group"><label class="form-label">Password</label><input class="form-control" id="rg-pass" type="password" placeholder="Min 6 characters"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">City</label><input class="form-control" id="rg-city" placeholder="Delhi"></div>
+        <div class="form-group"><label class="form-label">State</label><input class="form-control" id="rg-state" placeholder="Delhi"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Age</label><input class="form-control" id="rg-age" type="number" placeholder="25" min="18" max="65"></div>
+        <div class="form-group"><label class="form-label">Weight (kg)</label><input class="form-control" id="rg-weight" type="number" placeholder="60" min="45"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Gender</label>
+        <select class="form-control" id="rg-gender"><option value="">Select</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Blood Type</label>
+        <div class="bt-selector" id="rg-bt-sel">${bts.map(b => `<div class="bt-opt" onclick="selectRegBT('${b}',this)">${b}</div>`).join('')}</div>
+        <input type="hidden" id="rg-bt">
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Last Donation Date</label><input class="form-control" id="rg-lastdon" type="date"></div>
+        <div class="form-group"><label class="form-label">Total Past Donations</label><input class="form-control" id="rg-totdon" type="number" placeholder="0" min="0"></div>
+      </div>
+      <button class="btn btn-primary btn-full" style="padding:12px;font-size:14px;margin-top:8px" onclick="doRegister()">Create Account →</button>
+      <div class="auth-switch">Already have an account? <a onclick="state.page='login';render()">Sign In</a></div>
+    </div>
+  </div>`;
+}
+
+function selectRegBT(bt, el) {
+  document.querySelectorAll('#rg-bt-sel .bt-opt').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('rg-bt').value = bt;
+}
+
+// ===== APP SHELL =====
+function renderApp() {
+  const pages = [
+    { page: 'dashboard', icon: '📊', label: 'Dashboard' },
+    { page: 'requests', icon: '🩸', label: 'Blood Requests' },
+    { page: 'donors', icon: '👥', label: 'Find Donors' },
+    { page: 'banks', icon: '🏥', label: 'Blood Banks' },
+    { page: 'predictor', icon: '🤖', label: 'AI Predictor' },
+    { page: 'analytics', icon: '📈', label: 'Analytics' },
+    { page: 'notifications', icon: '🔔', label: 'Notifications' },
+    { page: 'profile', icon: '👤', label: 'My Profile' },
+  ];
+  const initials = (n) => n ? n.split(' ').map(x => x[0]).join('').substring(0, 2).toUpperCase() : 'U';
+  return `
+  <div class="app-shell">
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-logo" onclick="toggleSidebar()">
+        <div class="logo-icon">🩸</div>
+        <div class="logo-text">Blood<span>Point</span></div>
+      </div>
+      <nav class="sidebar-nav">
+        ${pages.map(p => `
+          <div class="nav-item ${state.page === p.page ? 'active' : ''}" data-page="${p.page}" onclick="navigate('${p.page}')">
+            <span class="nav-icon">${p.icon}</span>
+            <span>${p.label}</span>
+            ${p.page === 'notifications' && state.notifCount > 0 ? `<span class="nav-badge">${state.notifCount}</span>` : ''}
+          </div>`).join('')}
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-card" onclick="navigate('profile')">
+          <div class="user-avatar">${initials(state.user?.name)}</div>
+          <div class="user-info">
+            <div class="user-name">${state.user?.name || 'User'}</div>
+            <div class="user-role">${state.donor?.blood_type || ''} Donor</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="main">
+      <div class="topbar">
+        <div class="topbar-title">${pageTitles[state.page] || 'BloodPoint'}</div>
+        <div class="topbar-search">
+          <span class="si">🔍</span>
+          <input placeholder="Search donors, requests..." id="global-search" oninput="handleSearch(this.value)">
+        </div>
+        <div class="topbar-actions">
+          <div class="icon-btn" onclick="navigate('notifications')" title="Notifications">
+            🔔
+            <div class="notif-badge ${state.notifCount > 0 ? 'show' : ''}" id="notif-badge">${state.notifCount > 9 ? '9+' : state.notifCount}</div>
+          </div>
+          <div class="icon-btn" onclick="doLogout()" title="Logout">🚪</div>
+        </div>
+      </div>
+      <div class="content" id="page-content">
+        <div class="page active" id="current-page"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+const pageTitles = {
+  dashboard: 'Dashboard', requests: 'Blood Requests', donors: 'Find Donors',
+  banks: 'Blood Banks & Inventory', predictor: 'AI Donation Predictor',
+  analytics: 'Analytics', notifications: 'Notifications', profile: 'My Profile'
+};
+
+function toggleSidebar() {
+  document.getElementById('sidebar')?.classList.toggle('collapsed');
+}
+
+// ===== PAGE RENDERER =====
+async function renderPage() {
+  const el = document.getElementById('current-page');
+  if (!el) return;
+  el.innerHTML = `<div style="text-align:center;padding:60px"><div class="spinner"></div></div>`;
+  try {
+    switch (state.page) {
+      case 'dashboard': el.innerHTML = await buildDashboard(); bindDashboard(); break;
+      case 'requests': el.innerHTML = await buildRequests(); bindRequests(); break;
+      case 'donors': el.innerHTML = await buildDonors(); break;
+      case 'banks': el.innerHTML = await buildBanks(); break;
+      case 'predictor': el.innerHTML = buildPredictor(); break;
+      case 'analytics': el.innerHTML = await buildAnalytics(); buildCharts(); break;
+      case 'notifications': el.innerHTML = await buildNotifications(); break;
+      case 'profile': el.innerHTML = buildProfile(); break;
+      default: el.innerHTML = '<div class="empty"><div class="empty-icon">🚧</div>Page coming soon</div>';
+    }
+  } catch (e) { el.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div>${e.message}</div>`; }
+}
+
+// ===== DASHBOARD =====
+async function buildDashboard() {
+  const [reqs, stats, inv] = await Promise.all([
+    api.get('/api/requests?status=open'),
+    api.get('/api/banks/analytics/stats'),
+    api.get('/api/banks/inventory/summary')
+  ]);
+  state.stats = stats;
+  const urgent = reqs.filter(r => r.urgency !== 'normal').slice(0, 3);
+  const top = stats.topDonors?.slice(0, 5) || [];
+
+  return `
+  <div class="grid-4" style="margin-bottom:20px">
+    <div class="stat-card red"><div class="stat-icon">👥</div><div class="stat-num">${stats.totalDonors || 0}</div><div class="stat-label">Total Donors</div><div class="stat-change up">↑ ${stats.availableDonors || 0} available now</div></div>
+    <div class="stat-card green"><div class="stat-icon">💉</div><div class="stat-num">${stats.totalDonations || 0}</div><div class="stat-label">Donations Made</div><div class="stat-change up">↑ ${Math.round((stats.totalVolume || 0) / 1000)}L blood collected</div></div>
+    <div class="stat-card gold"><div class="stat-icon">🆘</div><div class="stat-num">${stats.openRequests || 0}</div><div class="stat-label">Open Requests</div><div class="stat-change down">⚡ ${stats.urgentRequests || 0} urgent/critical</div></div>
+    <div class="stat-card blue"><div class="stat-icon">🏥</div><div class="stat-num">47</div><div class="stat-label">Blood Banks</div><div class="stat-change up">↑ All connected</div></div>
+  </div>
+  <div class="grid-2" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-title">🆘 Urgent Requests ${urgent.length > 0 ? `<span style="font-size:11px;color:var(--red);font-family:Space Mono,monospace;font-weight:400">${urgent.length} active</span>` : ''}</div>
+      ${urgent.length === 0 ? '<div class="empty"><div class="empty-icon">✅</div>No urgent requests right now</div>' :
+        urgent.map(r => `
+        <div style="padding:14px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px">
+          <div style="font-family:Syne,sans-serif;font-size:28px;font-weight:800;color:var(--red);width:52px">${r.blood_type}</div>
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:13.5px">${r.patient_name}</div>
+            <div style="font-size:12px;color:var(--muted)">${r.hospital} · ${r.city}</div>
+            <div style="margin-top:4px"><span class="urgency-badge-${r.urgency}">${r.urgency.toUpperCase()}</span></div>
+          </div>
+          <button class="btn btn-sm btn-outline" onclick="respondToRequest('${r.id}')">Respond</button>
+        </div>`).join('')}
+      <button class="btn btn-ghost" style="width:100%;margin-top:12px;font-size:13px" onclick="navigate('requests')">View All Requests →</button>
+    </div>
+    <div class="card">
+      <div class="card-title">🏆 Top Donors</div>
+      ${top.map((d, i) => `
+        <div class="lb-row">
+          <div class="lb-rank ${i===0?'gold':i===1?'silver':i===2?'bronze':''}">${i + 1}</div>
+          <div class="lb-av">${d.name.split(' ').map(x=>x[0]).join('').substring(0,2)}</div>
+          <div style="flex:1"><div class="lb-name">${d.name}</div><div class="lb-meta">${d.blood_type} · ${d.city}</div></div>
+          <div class="lb-count">${d.total_donations}</div>
+        </div>`).join('')}
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">🩸 Blood Inventory Overview</div>
+    <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:10px">
+      ${inv.map(i => `
+        <div style="background:var(--dark3);border-radius:10px;padding:14px;text-align:center">
+          <div style="font-family:Space Mono,monospace;font-size:11px;color:var(--muted);margin-bottom:6px">${i.blood_type}</div>
+          <div style="font-family:Syne,sans-serif;font-size:26px;font-weight:800;color:${i.total_available < 5 ? 'var(--red)' : i.total_available < 15 ? 'var(--gold)' : 'var(--green)'}">${i.total_available}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:3px">units</div>
+          <div class="progress-bar" style="margin-top:8px"><div class="progress-fill ${i.total_available >= 15 ? 'green' : ''}" style="width:${Math.min(i.total_available * 3, 100)}%"></div></div>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function bindDashboard() {}
+
+// ===== BLOOD REQUESTS =====
+async function buildRequests() {
+  const reqs = await api.get('/api/requests');
+  state.requests = reqs;
+  const bts = ['All', 'O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'];
+  return `
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      ${bts.map(bt => `<button class="btn btn-sm btn-outline req-bt-filter ${bt==='All'?'btn-primary':''}" onclick="filterRequests('${bt}',this)">${bt}</button>`).join('')}
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn btn-sm btn-outline" onclick="filterRequests('urgent_only',null)">⚡ Urgent Only</button>
+      <button class="btn btn-primary btn-sm" onclick="openNewRequestModal()">+ New Request</button>
+    </div>
+  </div>
+  <div id="req-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
+    ${reqs.length === 0 ? '<div class="empty"><div class="empty-icon">✅</div>No open blood requests</div>' : reqs.map(r => renderReqCard(r)).join('')}
+  </div>`;
+}
+
+function renderReqCard(r) {
+  const ago = timeAgo(r.created_at);
+  return `
+  <div class="req-card ${r.urgency === 'critical' ? 'critical-card' : ''}">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <span class="urgency-badge-${r.urgency}">${r.urgency.toUpperCase()}</span>
+      <span style="font-size:11px;color:var(--muted);font-family:Space Mono,monospace">${ago}</span>
+    </div>
+    <div class="req-blood-big">${r.blood_type}</div>
+    <div style="font-weight:600;font-size:14px;margin-bottom:8px">${r.patient_name}</div>
+    <div class="req-meta">
+      🏥 ${r.hospital}<br>
+      📍 ${r.city}<br>
+      💉 ${r.units_needed} unit${r.units_needed > 1 ? 's' : ''} needed<br>
+      📞 ${r.contact_phone}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-primary btn-sm" style="flex:1" onclick="respondToRequest('${r.id}')">I Can Donate</button>
+      <button class="btn btn-outline btn-sm" onclick="viewRequest('${r.id}')">Details</button>
+    </div>
+  </div>`;
+}
+
+function bindRequests() {}
+
+function filterRequests(bt, el) {
+  if (el) { document.querySelectorAll('.req-bt-filter').forEach(b => { b.classList.remove('btn-primary'); b.classList.add('btn-outline'); }); el.classList.add('btn-primary'); el.classList.remove('btn-outline'); }
+  let filtered = state.requests;
+  if (bt === 'urgent_only') filtered = filtered.filter(r => r.urgency !== 'normal');
+  else if (bt !== 'All') filtered = filtered.filter(r => r.blood_type === bt);
+  document.getElementById('req-grid').innerHTML = filtered.length === 0 ? '<div class="empty"><div class="empty-icon">🔍</div>No requests found</div>' : filtered.map(r => renderReqCard(r)).join('');
+}
+
+function openNewRequestModal() {
+  openModal(`
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title">🆘 New Blood Request</div>
+    <div class="modal-sub">Fill in the patient details. Matching donors will be notified immediately.</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Patient Name</label><input class="form-control" id="nrq-name" placeholder="Patient name"></div>
+      <div class="form-group"><label class="form-label">Blood Type Needed</label>
+        <select class="form-control" id="nrq-bt"><option value="">Select</option>${['O+','O-','A+','A-','B+','B-','AB+','AB-'].map(b=>`<option>${b}</option>`).join('')}</select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Units Needed</label><input class="form-control" id="nrq-units" type="number" placeholder="2" min="1" max="20"></div>
+      <div class="form-group"><label class="form-label">Urgency</label>
+        <select class="form-control" id="nrq-urgency"><option value="normal">Normal (24–48h)</option><option value="urgent">Urgent (6–12h)</option><option value="critical">Critical (< 2h)</option></select></div>
+    </div>
+    <div class="form-group"><label class="form-label">Hospital / Clinic</label><input class="form-control" id="nrq-hospital" placeholder="Apollo Hospital"></div>
+    <div class="form-group"><label class="form-label">City</label><input class="form-control" id="nrq-city" placeholder="Delhi"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Contact Name</label><input class="form-control" id="nrq-cname" placeholder="Dr. Sharma"></div>
+      <div class="form-group"><label class="form-label">Contact Phone</label><input class="form-control" id="nrq-cphone" placeholder="+91 98765 43210"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Reason (optional)</label><textarea class="form-control" id="nrq-reason" placeholder="Surgery, accident, thalassemia..."></textarea></div>
+    <button class="btn btn-primary btn-full" style="padding:12px" onclick="submitNewRequest()">📢 Submit Request</button>
+  `);
+}
+
+async function submitNewRequest() {
+  const body = {
+    patient_name: document.getElementById('nrq-name').value.trim(),
+    blood_type: document.getElementById('nrq-bt').value,
+    units_needed: document.getElementById('nrq-units').value,
+    urgency: document.getElementById('nrq-urgency').value,
+    hospital: document.getElementById('nrq-hospital').value.trim(),
+    city: document.getElementById('nrq-city').value.trim(),
+    contact_name: document.getElementById('nrq-cname').value.trim(),
+    contact_phone: document.getElementById('nrq-cphone').value.trim(),
+    reason: document.getElementById('nrq-reason').value.trim(),
+  };
+  if (!body.patient_name || !body.blood_type || !body.hospital || !body.city || !body.contact_name || !body.contact_phone) { toast('Missing Fields', 'Please fill all required fields', 'error'); return; }
+  try {
+    const r = await api.post('/api/requests', body);
+    closeModal();
+    toast('Request Submitted! 📢', `${r.matched_donors} matching donor(s) notified`, 'success');
+    navigate('requests');
+  } catch (e) { toast('Error', e.message, 'error'); }
+}
+
+async function respondToRequest(id) {
+  if (!state.donor) { toast('Error', 'You need a donor profile to respond', 'error'); return; }
+  try {
+    await api.post(`/api/requests/${id}/respond`, {});
+    toast('Response Sent! 🩸', 'The requester has been notified. They will contact you.', 'success');
+    navigate('requests');
+  } catch (e) { toast('Already Responded', e.message, 'warning'); }
+}
+
+async function viewRequest(id) {
+  try {
+    const r = await api.get(`/api/requests/${id}`);
+    openModal(`
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title">Blood Request Details</div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+        <div style="font-family:Syne,sans-serif;font-size:52px;font-weight:800;color:var(--red)">${r.blood_type}</div>
+        <div><div style="font-weight:600;font-size:16px">${r.patient_name}</div><span class="urgency-badge-${r.urgency}">${r.urgency.toUpperCase()}</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+        <div class="card-sm"><div style="font-size:11px;color:var(--muted)">HOSPITAL</div><div style="font-weight:600;margin-top:3px">${r.hospital}</div></div>
+        <div class="card-sm"><div style="font-size:11px;color:var(--muted)">CITY</div><div style="font-weight:600;margin-top:3px">${r.city}</div></div>
+        <div class="card-sm"><div style="font-size:11px;color:var(--muted)">UNITS NEEDED</div><div style="font-weight:600;margin-top:3px">${r.units_needed}</div></div>
+        <div class="card-sm"><div style="font-size:11px;color:var(--muted)">CONTACT</div><div style="font-weight:600;margin-top:3px">${r.contact_name}<br><span style="font-size:12px;color:var(--muted)">${r.contact_phone}</span></div></div>
+      </div>
+      ${r.reason ? `<div class="card-sm" style="margin-bottom:16px"><div style="font-size:11px;color:var(--muted)">REASON</div><div style="margin-top:4px">${r.reason}</div></div>` : ''}
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px">${r.responses?.length || 0} donor(s) have responded</div>
+      <button class="btn btn-primary btn-full" onclick="respondToRequest('${r.id}');closeModal()">🩸 I Can Donate for This Patient</button>
+    `);
+  } catch (e) { toast('Error', e.message, 'error'); }
+}
+
+// ===== DONORS =====
+async function buildDonors() {
+  const donors = await api.get('/api/donors?available=1');
+  state.donors = donors;
+  const bts = ['All', 'O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'];
+  return `
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      ${bts.map(bt => `<button class="btn btn-sm btn-outline donor-bt-filter ${bt==='All'?'btn-primary':''}" onclick="filterDonors('${bt}',this)">${bt}</button>`).join('')}
+    </div>
+    <input class="form-control" style="max-width:200px;padding:8px 12px" id="donor-city-filter" placeholder="Filter by city..." oninput="filterDonorsByCity(this.value)">
+  </div>
+  <div id="donors-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">
+    ${donors.length === 0 ? '<div class="empty"><div class="empty-icon">👥</div>No donors found</div>' : donors.map(d => renderDonorCard(d)).join('')}
+  </div>`;
+}
+
+function renderDonorCard(d) {
+  const initials = d.name ? d.name.split(' ').map(x => x[0]).join('').substring(0, 2) : 'D';
+  return `
+  <div class="donor-card">
+    <div class="donor-av">${initials}</div>
+    <div style="flex:1">
+      <div class="donor-bt">${d.blood_type}</div>
+      <div class="donor-nm">${d.name}</div>
+      <div class="donor-info-sm"><span class="available-dot"></span>Available · ${d.city}<br>💉 ${d.total_donations} donation${d.total_donations !== 1 ? 's' : ''} · ${Math.round((d.total_volume_ml || 0) / 1000 * 10) / 10}L total</div>
+    </div>
+  </div>`;
+}
+
+function filterDonors(bt, el) {
+  if (el) { document.querySelectorAll('.donor-bt-filter').forEach(b => { b.classList.remove('btn-primary'); b.classList.add('btn-outline'); }); el.classList.add('btn-primary'); el.classList.remove('btn-outline'); }
+  const city = document.getElementById('donor-city-filter')?.value?.toLowerCase() || '';
+  let filtered = state.donors;
+  if (bt !== 'All') filtered = filtered.filter(d => d.blood_type === bt);
+  if (city) filtered = filtered.filter(d => d.city?.toLowerCase().includes(city));
+  document.getElementById('donors-grid').innerHTML = filtered.length === 0 ? '<div class="empty"><div class="empty-icon">🔍</div>No donors found</div>' : filtered.map(d => renderDonorCard(d)).join('');
+}
+
+function filterDonorsByCity(v) { filterDonors(document.querySelector('.donor-bt-filter.btn-primary')?.textContent || 'All', null); }
+
+// ===== BLOOD BANKS =====
+async function buildBanks() {
+  const banks = await api.get('/api/banks');
+  return `
+  <div style="margin-bottom:20px;display:flex;gap:10px;align-items:center">
+    <input class="form-control" style="max-width:240px;padding:8px 12px" id="bank-city-filter" placeholder="Filter by city..." oninput="filterBanks(this.value)">
+    <span style="font-size:13px;color:var(--muted)">${banks.length} blood banks connected</span>
+  </div>
+  <div id="banks-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px">
+    ${banks.map(b => `
+      <div class="bank-card">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">
+          <div class="bank-name">${b.name}</div>
+          <span style="font-size:11px;background:rgba(0,204,115,.1);color:var(--green);padding:2px 8px;border-radius:5px;font-family:Space Mono,monospace">${b.is_24h ? '24H' : 'Open'}</span>
+        </div>
+        <div class="bank-addr">📍 ${b.address} · 📞 ${b.phone}</div>
+        <div class="inventory-grid">
+          ${b.inventory.map(i => `
+            <div class="inv-cell">
+              <div class="inv-type">${i.blood_type}</div>
+              <div class="inv-units ${i.units_available < 5 ? 'low' : i.units_available >= 15 ? 'ok' : ''}">${i.units_available}</div>
+            </div>`).join('')}
+        </div>
+        <div style="margin-top:12px;font-size:11px;color:var(--muted);display:flex;gap:14px">
+          ${b.email ? `<span>✉️ ${b.email}</span>` : ''}
+          <span>🕐 ${b.is_24h ? '24 hours' : b.opening_time + ' – ' + b.closing_time}</span>
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function filterBanks(city) {
+  const all = document.querySelectorAll('.bank-card');
+  all.forEach(c => c.parentElement.style.display = c.querySelector('.bank-addr').textContent.toLowerCase().includes(city.toLowerCase()) ? '' : 'none');
+}
+
+// ===== AI PREDICTOR =====
+function buildPredictor() {
+  return `
+  <div class="grid-2" style="align-items:start">
+    <div class="card">
+      <div class="card-title">🤖 RFMTC Donation Predictor</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Based on the RFMTC model (Recency, Frequency, Monetary, Time, Class) — the gold standard in blood donation ML research. Enter your donation history below.</p>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Months Since Last Donation</label><input class="form-control" id="pr-r" type="number" placeholder="e.g. 4" min="0"></div>
+        <div class="form-group"><label class="form-label">Total Donations Ever</label><input class="form-control" id="pr-f" type="number" placeholder="e.g. 8" min="0"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Months Since First Donation</label><input class="form-control" id="pr-t" type="number" placeholder="e.g. 36" min="0"></div>
+        <div class="form-group"><label class="form-label">Total Volume Donated (ml)</label><input class="form-control" id="pr-m" type="number" placeholder="e.g. 3600" min="0"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Age Group</label>
+          <select class="form-control" id="pr-age"><option value="">Select</option><option value="18-25">18–25</option><option value="26-35">26–35</option><option value="36-45">36–45</option><option value="46-55">46–55</option><option value="55+">55+</option></select></div>
+        <div class="form-group"><label class="form-label">Blood Type</label>
+          <select class="form-control" id="pr-bt"><option value="">Select</option>${['O+','O-','A+','A-','B+','B-','AB+','AB-'].map(b=>`<option>${b}</option>`).join('')}</select></div>
+      </div>
+      <button class="btn btn-primary btn-full" style="padding:12px;margin-top:4px" onclick="runPredictor()">⚡ Run ML Prediction</button>
+      <div id="pred-result" style="display:none;margin-top:20px;background:var(--dark3);border-radius:12px;padding:20px;border:1px solid var(--border)">
+        <div style="display:flex;align-items:flex-end;gap:14px;margin-bottom:16px">
+          <div style="font-family:Syne,sans-serif;font-size:56px;font-weight:800;color:var(--green);line-height:1" id="pred-score">-</div>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--text)" id="pred-segment">-</div>
+            <div style="font-size:12px;color:var(--muted)">Likelihood to donate in 90 days</div>
+          </div>
+        </div>
+        <div id="pred-bars"></div>
+        <div id="pred-advice" style="margin-top:14px;padding:12px;background:rgba(232,25,44,.06);border-radius:8px;font-size:12.5px;color:var(--muted);line-height:1.7;border:1px solid rgba(232,25,44,.15)"></div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">📖 About the Model</div>
+        <p style="font-size:13px;color:var(--muted);line-height:1.8;margin-bottom:14px">The RFMTC model is adapted from customer lifetime value research for blood donation prediction. It measures:</p>
+        ${[['R – Recency','Days since last donation. More recent = higher score.'],['F – Frequency','Total number of donations ever made.'],['M – Monetary','Total blood volume donated (proxy for commitment).'],['T – Time','Months between first and last donation (loyalty).'],['C – Class','Binary target: will donate in next 3 months?']].map(([t,d])=>`
+          <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+            <div style="font-family:Space Mono,monospace;font-size:12px;color:var(--red);margin-bottom:3px">${t}</div>
+            <div style="font-size:12.5px;color:var(--muted)">${d}</div>
+          </div>`).join('')}
+      </div>
+      <div class="card">
+        <div class="card-title">🧮 Compatibility Matrix</div>
+        <div style="overflow-x:auto">
+          <table class="compat-table" style="width:100%">
+            <tr><th style="text-align:left;color:var(--muted)">Donor ↓ / Patient →</th>${['O-','O+','A+','A-','B+','B-','AB+','AB-'].map(t=>`<th>${t}</th>`).join('')}</tr>
+            ${buildCompatTable()}
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildCompatTable() {
+  const compat = { 'O-': ['O-','O+','A+','A-','B+','B-','AB+','AB-'], 'O+': ['O+','A+','B+','AB+'], 'A-': ['A-','A+','AB-','AB+'], 'A+': ['A+','AB+'], 'B-': ['B-','B+','AB-','AB+'], 'B+': ['B+','AB+'], 'AB-': ['AB-','AB+'], 'AB+': ['AB+'] };
+  const types = ['O-','O+','A+','A-','B+','B-','AB+','AB-'];
+  return types.map(donor => `<tr><td style="font-family:Space Mono,monospace;font-weight:700;color:var(--red);padding:5px 8px">${donor}</td>${types.map(rec => `<td class="${compat[donor].includes(rec) ? 'compat-yes' : 'compat-no'}">${compat[donor].includes(rec) ? '✓' : '·'}</td>`).join('')}</tr>`).join('');
+}
+
+async function runPredictor() {
+  const r = +document.getElementById('pr-r').value;
+  const f = +document.getElementById('pr-f').value;
+  const m = +document.getElementById('pr-m').value;
+  const t = +document.getElementById('pr-t').value;
+  const age = document.getElementById('pr-age').value;
+  const bt = document.getElementById('pr-bt').value;
+  try {
+    const result = await api.post('/api/donors/predict', { recency: r, frequency: f, monetary: m, time_months: t, age_group: age, blood_type: bt });
+    document.getElementById('pred-score').textContent = result.score + '%';
+    document.getElementById('pred-score').style.color = result.score >= 75 ? 'var(--green)' : result.score >= 50 ? 'var(--gold)' : 'var(--red)';
+    document.getElementById('pred-segment').textContent = `Segment: ${result.segment}`;
+    document.getElementById('pred-bars').innerHTML = [
+      ['Recency Score', result.recency_score, 'red'],
+      ['Frequency Score', result.frequency_score, 'green'],
+      ['Monetary Score', result.monetary_score, 'gold'],
+      ['Time Score', result.time_score, 'blue'],
+    ].map(([l, v, c]) => `
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--muted)">${l}</span><span style="color:var(--text);font-weight:600">${v}%</span></div>
+        <div class="progress-bar"><div class="progress-fill ${c === 'green' ? 'green' : c === 'gold' ? 'gold' : ''}" style="width:${v}%"></div></div>
+      </div>`).join('');
+    document.getElementById('pred-advice').innerHTML = `<strong style="color:var(--text)">ML Insight:</strong> ${result.advice}`;
+    document.getElementById('pred-result').style.display = 'block';
+    toast('Prediction Complete', `Score: ${result.score}% — ${result.segment} Donor`, 'success');
+  } catch (e) { toast('Error', e.message, 'error'); }
+}
+
+// ===== ANALYTICS =====
+async function buildAnalytics() {
+  const stats = await api.get('/api/banks/analytics/stats');
+  const inv = await api.get('/api/banks/inventory/summary');
+  state.stats = stats; state.inv = inv;
+  return `
+  <div class="grid-4" style="margin-bottom:20px">
+    <div class="stat-card red"><div class="stat-icon">👥</div><div class="stat-num">${stats.totalDonors}</div><div class="stat-label">Total Donors</div></div>
+    <div class="stat-card green"><div class="stat-icon">💉</div><div class="stat-num">${stats.totalDonations}</div><div class="stat-label">All Time Donations</div></div>
+    <div class="stat-card gold"><div class="stat-icon">🆘</div><div class="stat-num">${stats.openRequests}</div><div class="stat-label">Open Requests</div></div>
+    <div class="stat-card blue"><div class="stat-icon">🩸</div><div class="stat-num">${Math.round((stats.totalVolume || 0) / 1000)}L</div><div class="stat-label">Blood Collected</div></div>
+  </div>
+  <div class="grid-2" style="margin-bottom:16px">
+    <div class="card"><div class="card-title">📊 Blood Type Distribution</div><div class="chart-wrap"><canvas id="bt-chart" height="200"></canvas></div></div>
+    <div class="card"><div class="card-title">🏙️ Donors by City</div><div class="chart-wrap"><canvas id="city-chart" height="200"></canvas></div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">📈 Donation Activity</div><div class="chart-wrap"><canvas id="activity-chart" height="180"></canvas></div></div>
+    <div class="card">
+      <div class="card-title">📦 Inventory Status</div>
+      ${inv.map(i => `
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          <div style="font-family:Space Mono,monospace;font-weight:700;font-size:12px;color:var(--red);width:30px">${i.blood_type}</div>
+          <div style="flex:1">
+            <div class="progress-bar" style="height:10px"><div class="progress-fill ${i.total_available >= 15 ? 'green' : i.total_available < 5 ? '' : 'gold'}" style="width:${Math.min(i.total_available * 2.5, 100)}%"></div></div>
+          </div>
+          <div style="font-family:Syne,sans-serif;font-weight:700;color:${i.total_available < 5 ? 'var(--red)' : i.total_available >= 15 ? 'var(--green)' : 'var(--gold)'};width:36px;text-align:right">${i.total_available}</div>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function buildCharts() {
+  const stats = state.stats;
+  const btData = stats.bloodTypeDistribution || [];
+  const cityData = stats.cityDistribution || [];
+  const monthly = stats.monthlyDonations || [];
+  const colors = ['#E8192C','#FF6B6B','#FF9999','#FFCCCC','#4A90E2','#00CC73','#F5A623','#9B59B6'];
+
+  new Chart(document.getElementById('bt-chart'), {
+    type: 'doughnut',
+    data: { labels: btData.map(d => d.blood_type), datasets: [{ data: btData.map(d => d.count), backgroundColor: colors, borderWidth: 0 }] },
+    options: { responsive: true, plugins: { legend: { position: 'right', labels: { color: '#5A5A78', font: { size: 11 } } } } }
+  });
+
+  new Chart(document.getElementById('city-chart'), {
+    type: 'bar',
+    data: { labels: cityData.map(d => d.city), datasets: [{ label: 'Donors', data: cityData.map(d => d.count), backgroundColor: '#E8192C', borderRadius: 6 }] },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255,255,255,.04)' } }, x: { grid: { display: false }, ticks: { color: '#5A5A78' } } } }
+  });
+
+  const months = monthly.reverse();
+  new Chart(document.getElementById('activity-chart'), {
+    type: 'line',
+    data: { labels: months.map(m => m.month), datasets: [{ label: 'Donations', data: months.map(m => m.count), borderColor: '#E8192C', backgroundColor: 'rgba(232,25,44,.08)', fill: true, tension: .4, pointRadius: 4, pointBackgroundColor: '#E8192C' }] },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255,255,255,.04)' } }, x: { grid: { display: false }, ticks: { color: '#5A5A78', maxTicksLimit: 6 } } } }
+  });
+}
+
+// ===== NOTIFICATIONS =====
+async function buildNotifications() {
+  const notes = await api.get('/api/notifications');
+  state.notifications = notes;
+  const unread = notes.filter(n => !n.is_read).length;
+  if (unread > 0) {
+    try { await api.patch('/api/notifications/read-all', {}); state.notifCount = 0; document.getElementById('notif-badge')?.classList.remove('show'); } catch {}
+  }
+  return `
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+    <div style="font-size:16px;color:var(--muted)">${notes.length} notification${notes.length !== 1 ? 's' : ''}</div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    ${notes.length === 0 ? '<div class="empty" style="padding:60px"><div class="empty-icon">🔔</div>No notifications yet</div>' :
+      notes.map(n => `
+        <div class="notif-item ${n.is_read ? '' : 'unread'}">
+          <div class="notif-title">${n.title}</div>
+          <div class="notif-msg">${n.message}</div>
+          <div class="notif-time">${timeAgo(n.created_at)}</div>
+        </div>`).join('')}
+  </div>`;
+}
+
+// ===== PROFILE =====
+function buildProfile() {
+  const u = state.user, d = state.donor;
+  const initials = u?.name ? u.name.split(' ').map(x => x[0]).join('').substring(0, 2) : 'U';
+  const badge = d?.total_donations >= 20 ? 'Champion 🏆' : d?.total_donations >= 10 ? 'Hero ⭐' : d?.total_donations >= 5 ? 'Regular 💉' : 'New Donor 🩸';
+  return `
+  <div class="profile-header">
+    <div class="profile-big-av">${initials}</div>
+    <div>
+      <div class="profile-name">${u?.name}</div>
+      <div class="profile-sub">${u?.email} · ${u?.phone}</div>
+      <div class="profile-tags">
+        <span class="tag tag-red">${d?.blood_type || 'Unknown'}</span>
+        <span class="tag tag-green">${d?.is_available ? 'Available to Donate' : 'Not Available'}</span>
+        <span class="tag tag-gold">${badge}</span>
+        <span class="tag tag-blue">${d?.city}, ${d?.state || 'India'}</span>
+      </div>
+    </div>
+  </div>
+  <div class="grid-4" style="margin-bottom:20px">
+    <div class="stat-card red"><div class="stat-icon">💉</div><div class="stat-num">${d?.total_donations || 0}</div><div class="stat-label">Total Donations</div></div>
+    <div class="stat-card green"><div class="stat-icon">🩸</div><div class="stat-num">${Math.round((d?.total_volume_ml || 0) / 1000 * 10) / 10}L</div><div class="stat-label">Blood Donated</div></div>
+    <div class="stat-card gold"><div class="stat-icon">📅</div><div class="stat-num">${d?.last_donation_date ? d.last_donation_date.substring(0, 7) : 'Never'}</div><div class="stat-label">Last Donation</div></div>
+    <div class="stat-card blue"><div class="stat-icon">⚖️</div><div class="stat-num">${d?.weight || '?'}kg</div><div class="stat-label">Weight</div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">✏️ Update Profile</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">City</label><input class="form-control" id="up-city" value="${d?.city || ''}"></div>
+        <div class="form-group"><label class="form-label">State</label><input class="form-control" id="up-state" value="${d?.state || ''}"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Weight (kg)</label><input class="form-control" id="up-weight" type="number" value="${d?.weight || ''}"></div>
+        <div class="form-group"><label class="form-label">Availability</label>
+          <select class="form-control" id="up-avail"><option value="1" ${d?.is_available ? 'selected' : ''}>Available</option><option value="0" ${!d?.is_available ? 'selected' : ''}>Not Available</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">Health Conditions (if any)</label><textarea class="form-control" id="up-health">${d?.health_conditions || ''}</textarea></div>
+      <button class="btn btn-primary" onclick="updateProfile()">Save Changes</button>
+    </div>
+    <div class="card">
+      <div class="card-title">💉 Log a New Donation</div>
+      <div class="form-group"><label class="form-label">Blood Bank / Hospital</label><input class="form-control" id="ld-bank" placeholder="AIIMS Blood Bank"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Volume (ml)</label><input class="form-control" id="ld-vol" type="number" value="450" min="100" max="600"></div>
+        <div class="form-group"><label class="form-label">Hemoglobin (g/dL)</label><input class="form-control" id="ld-hb" type="number" placeholder="13.5" step="0.1"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Notes</label><textarea class="form-control" id="ld-notes" placeholder="Any notes..."></textarea></div>
+      <button class="btn btn-primary" onclick="logDonation()">✅ Log Donation</button>
+      <div style="margin-top:16px;padding:12px;background:rgba(232,25,44,.05);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.7">
+        <strong style="color:var(--text)">Eligibility reminder:</strong> You must wait at least 56 days (8 weeks) between whole blood donations. Women should have hemoglobin ≥ 12.5 g/dL, men ≥ 13.5 g/dL.
+      </div>
+    </div>
+  </div>`;
+}
+
+async function updateProfile() {
+  if (!state.donor) return;
+  try {
+    await api.put(`/api/donors/${state.donor.id}`, {
+      city: document.getElementById('up-city').value,
+      state: document.getElementById('up-state').value,
+      weight: document.getElementById('up-weight').value,
+      is_available: document.getElementById('up-avail').value === '1',
+      health_conditions: document.getElementById('up-health').value,
+    });
+    toast('Profile Updated', 'Your profile has been saved', 'success');
+    const me = await api.get('/api/auth/me');
+    state.donor = me.donor;
+  } catch (e) { toast('Error', e.message, 'error'); }
+}
+
+async function logDonation() {
+  if (!state.donor) return;
+  try {
+    await api.post(`/api/donors/${state.donor.id}/donate`, {
+      blood_bank: document.getElementById('ld-bank').value,
+      volume_ml: document.getElementById('ld-vol').value,
+      hemoglobin_level: document.getElementById('ld-hb').value,
+      notes: document.getElementById('ld-notes').value,
+    });
+    toast('Donation Logged! 🩸', 'Thank you for saving lives!', 'success');
+    const me = await api.get('/api/auth/me');
+    state.donor = me.donor;
+    navigate('profile');
+  } catch (e) { toast('Error', e.message, 'error'); }
+}
+
+// ===== AUTH =====
+async function doLogin() {
+  const email = document.getElementById('li-email').value.trim();
+  const password = document.getElementById('li-pass').value;
+  if (!email || !password) { toast('Missing Fields', 'Please enter email and password', 'error'); return; }
+  try {
+    const r = await api.post('/api/auth/login', { email, password });
+    const me = await api.get('/api/auth/me');
+    state.user = me.user; state.donor = me.donor;
+    await loadNotifCount();
+    state.page = 'dashboard';
+    toast('Welcome back! 👋', `Hi ${r.user.name}`, 'success');
+    render();
+  } catch (e) { toast('Login Failed', e.message, 'error'); }
+}
+
+async function doRegister() {
+  const bt = document.getElementById('rg-bt').value;
+  if (!bt) { toast('Missing Blood Type', 'Please select your blood type', 'error'); return; }
+  const body = {
+    name: `${document.getElementById('rg-fname').value.trim()} ${document.getElementById('rg-lname').value.trim()}`.trim(),
+    email: document.getElementById('rg-email').value.trim(),
+    phone: document.getElementById('rg-phone').value.trim(),
+    password: document.getElementById('rg-pass').value,
+    blood_type: bt,
+    city: document.getElementById('rg-city').value.trim(),
+    state: document.getElementById('rg-state').value.trim(),
+    age: document.getElementById('rg-age').value,
+    weight: document.getElementById('rg-weight').value,
+    gender: document.getElementById('rg-gender').value,
+    last_donation_date: document.getElementById('rg-lastdon').value,
+    total_donations: document.getElementById('rg-totdon').value,
+  };
+  if (!body.name || !body.email || !body.phone || !body.password || !body.city) { toast('Missing Fields', 'Please fill all required fields', 'error'); return; }
+  try {
+    await api.post('/api/auth/register', body);
+    const me = await api.get('/api/auth/me');
+    state.user = me.user; state.donor = me.donor;
+    state.page = 'dashboard';
+    toast('Welcome to BloodPoint! 🩸', 'Your account has been created', 'success');
+    render();
+  } catch (e) { toast('Registration Failed', e.message, 'error'); }
+}
+
+async function doLogout() {
+  await api.post('/api/auth/logout', {});
+  state.user = null; state.donor = null; state.page = 'landing';
+  render();
+}
+
+async function loadNotifCount() {
+  try {
+    const r = await api.get('/api/notifications/unread-count');
+    state.notifCount = r.count;
+  } catch {}
+}
+
+function bindApp() {}
+function bindPublic() {
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && state.page === 'login') doLogin();
+  }, { once: true });
+}
+
+function handleSearch(v) {
+  if (!v) return;
+  if (state.page === 'donors') filterDonors('All', null);
+  if (state.page === 'requests') filterRequests(v, null);
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr), now = new Date();
+  const diff = Math.floor((now - d) / 1000);
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return Math.floor(diff / 86400) + 'd ago';
+}
+
+// ===== INIT =====
+(async () => {
+  try {
+    const me = await api.get('/api/auth/me');
+    state.user = me.user;
+    state.donor = me.donor;
+    await loadNotifCount();
+    state.page = 'dashboard';
+  } catch { state.page = 'landing'; }
+  render();
+})();
+</script>
+</body>
+</html>
